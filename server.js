@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
+const { Resend } = require('resend');
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -10,6 +11,8 @@ const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 pool.query(`
     CREATE TABLE IF NOT EXISTS envios (
@@ -27,13 +30,49 @@ pool.query(`
 app.post('/api/dados', async (req, res) => {
     const { comentario, operador, timestamp, arquivos } = req.body;
 
+    // salva no banco
     await pool.query(
         `INSERT INTO envios (operador, comentario, timestamp, alerta, recorte_acoes, recorte_historico)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [operador, comentario, timestamp, arquivos.alerta, arquivos.recorte_acoes, arquivos.recorte_historico]
     );
 
-    console.log('Recebido de:', operador);
+    // converte base64 para buffer para anexar no e-mail
+    const alertaBuffer = Buffer.from(arquivos.alerta, 'base64');
+    const acoesBuffer = Buffer.from(arquivos.recorte_acoes, 'base64');
+    const historicoBuffer = Buffer.from(arquivos.recorte_historico, 'base64');
+
+    // envia e-mail
+    await resend.emails.send({
+        from: 'onboarding@resend.dev',
+        to: ['uieda@hpb.com.br'],
+        subject: `Novo relatório recebido — ${operador}`,
+        html: `
+            <h2>Novo relatório recebido</h2>
+            <p><strong>Operador:</strong> ${operador}</p>
+            <p><strong>Data/Hora:</strong> ${new Date(timestamp).toLocaleString('pt-BR')}</p>
+            <p><strong>Comentário:</strong></p>
+            <p>${comentario}</p>
+            <hr>
+            <p>Arquivos em anexo.</p>
+        `,
+        attachments: [
+            {
+                filename: 'alerta.csv',
+                content: alertaBuffer
+            },
+            {
+                filename: 'recorte_acoes.csv',
+                content: acoesBuffer
+            },
+            {
+                filename: 'recorte_historico.csv',
+                content: historicoBuffer
+            }
+        ]
+    });
+
+    console.log('Recebido e e-mail enviado para:', operador);
     res.status(200).json({ status: 'recebido' });
 });
 

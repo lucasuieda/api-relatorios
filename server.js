@@ -29,4 +29,5 @@ app.post('/api/dados', (req, res) => {
     res.status(200).json({ status: 'recebido' });
 });
 
-app.listen(3001, () => console.log('API rodando em http://localhost:3001'));
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`API rodando na porta ${PORT}`));

@@ -11,7 +11,6 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false }
 });
 
-// cria a tabela se não existir
 pool.query(`
     CREATE TABLE IF NOT EXISTS envios (
         id SERIAL PRIMARY KEY,
@@ -31,14 +30,7 @@ app.post('/api/dados', async (req, res) => {
     await pool.query(
         `INSERT INTO envios (operador, comentario, timestamp, alerta, recorte_acoes, recorte_historico)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-            operador,
-            comentario,
-            timestamp,
-            arquivos.alerta,
-            arquivos.recorte_acoes,
-            arquivos.recorte_historico
-        ]
+        [operador, comentario, timestamp, arquivos.alerta, arquivos.recorte_acoes, arquivos.recorte_historico]
     );
 
     console.log('Recebido de:', operador);
@@ -50,6 +42,35 @@ app.get('/api/envios', async (req, res) => {
         'SELECT id, operador, comentario, timestamp, criado_em FROM envios ORDER BY criado_em DESC'
     );
     res.json(result.rows);
+});
+
+app.get('/api/envios/:id/arquivos', async (req, res) => {
+    const { id } = req.params;
+    const { arquivo } = req.query;
+
+    const result = await pool.query(
+        'SELECT alerta, recorte_acoes, recorte_historico FROM envios WHERE id = $1',
+        [id]
+    );
+
+    if (result.rows.length === 0) {
+        return res.status(404).json({ erro: 'envio não encontrado' });
+    }
+
+    const envio = result.rows[0];
+
+    if (arquivo && envio[arquivo]) {
+        const buffer = Buffer.from(envio[arquivo], 'base64');
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="${arquivo}.csv"`);
+        return res.send(buffer);
+    }
+
+    res.json({
+        alerta: envio.alerta,
+        recorte_acoes: envio.recorte_acoes,
+        recorte_historico: envio.recorte_historico
+    });
 });
 
 const PORT = process.env.PORT || 3001;

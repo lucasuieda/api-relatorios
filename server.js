@@ -44,7 +44,7 @@ app.post('/api/dados', async (req, res) => {
 
     // envia e-mail
     await resend.emails.send({
-        from: 'uieda@hpb.com.br',
+        from: 'onboarding@resend.dev',
         to: ['uieda@hpb.com.br'],
         subject: `${cliente} - Novo Relatório Troubleshooting`,
         html: `

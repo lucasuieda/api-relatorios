@@ -29,7 +29,7 @@ pool.query(`
 `).then(() => console.log('Tabela pronta'));
 
 app.post('/api/dados', async (req, res) => {
-    const { comentario, cliente, timestamp, arquivos, resumo } = req.body;
+    const { comentario, cliente, timestamp, arquivos, resumo, disturbios } = req.body;
 
     // salva no banco
     await pool.query(
@@ -49,10 +49,13 @@ app.post('/api/dados', async (req, res) => {
         to: ['uieda@hpb.com.br'],
         subject: `${cliente} - Novo Relatório Troubleshooting`,
         html: `
-            <h2>Relatório Troubleshooting</h2>
+            <h2>Novo relatório Troubleshooting</h2>
             <p><strong>Cliente:</strong> ${cliente}</p>
             <p><strong>Data/Hora:</strong> ${new Date(timestamp).toLocaleString('pt-BR')}</p>
-
+            <p><strong>Distúrbios ativos:</strong></p>
+            <ul>
+                ${disturbios.map(d => `<li>${d}</li>`).join('')}
+            </ul>
             ${resumo ? `
             <h3>Resumo do Checklist</h3>
             <p><strong>Concluído às:</strong> ${resumo.horario || 'não informado'}</p>
@@ -65,7 +68,7 @@ app.post('/api/dados', async (req, res) => {
             ` : '<p>Nenhum problema identificado pelas verificações disponíveis.</p>'}
             ` : ''}
 
-            ${comentario && comentario !== 'sem comentario' ? `
+            ${comentario ? `
             <p><strong>Comentário do operador:</strong> ${comentario}</p>
             ` : ''}
 

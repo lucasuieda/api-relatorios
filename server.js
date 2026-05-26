@@ -27,14 +27,18 @@ pool.query(`
     )
 `).then(() => console.log('Tabela pronta'));
 
+pool.query(`ALTER TABLE envios RENAME COLUMN operador TO cliente`)
+  .then(() => console.log('Coluna renomeada'))
+  .catch(() => console.log('Coluna já renomeada'))
+
 app.post('/api/dados', async (req, res) => {
-    const { comentario, operador, timestamp, arquivos } = req.body;
+    const { comentario, cliente, timestamp, arquivos } = req.body;
 
     // salva no banco
     await pool.query(
-        `INSERT INTO envios (operador, comentario, timestamp, alerta, recorte_acoes, recorte_historico)
+        `INSERT INTO envios (cliente, comentario, timestamp, alerta, recorte_acoes, recorte_historico)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [operador, comentario, timestamp, arquivos.alerta, arquivos.recorte_acoes, arquivos.recorte_historico]
+        [cliente, comentario, timestamp, arquivos.alerta, arquivos.recorte_acoes, arquivos.recorte_historico]
     );
 
     // converte base64 para buffer para anexar no e-mail
@@ -44,12 +48,12 @@ app.post('/api/dados', async (req, res) => {
 
     // envia e-mail
     await resend.emails.send({
-        from: 'onboarding@resend.dev',
+        from: 'uieda@hpb.com.br',
         to: ['uieda@hpb.com.br'],
-        subject: `Novo relatório recebido — ${operador}`,
+        subject: `${operador} - Novo Relatório Troubleshooting`,
         html: `
-            <h2>Novo relatório recebido</h2>
-            <p><strong>Operador:</strong> ${operador}</p>
+            <h2>Novo relatório Troubleshooting</h2>
+            <p><strong>Cliente:</strong> ${cliente}</p>
             <p><strong>Data/Hora:</strong> ${new Date(timestamp).toLocaleString('pt-BR')}</p>
             <p><strong>Comentário:</strong></p>
             <p>${comentario}</p>
@@ -78,7 +82,7 @@ app.post('/api/dados', async (req, res) => {
 
 app.get('/api/envios', async (req, res) => {
     const result = await pool.query(
-        'SELECT id, operador, comentario, timestamp, criado_em FROM envios ORDER BY criado_em DESC'
+        'SELECT id, cliente, comentario, timestamp, criado_em FROM envios ORDER BY criado_em DESC'
     );
     res.json(result.rows);
 });

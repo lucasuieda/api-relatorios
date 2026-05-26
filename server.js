@@ -28,6 +28,10 @@ pool.query(`
     )
 `).then(() => console.log('Tabela pronta'));
 
+pool.query(`ALTER TABLE envios ADD COLUMN IF NOT EXISTS resumo JSONB`)
+.then(() => console.log('Coluna resumo adicionada'))
+.catch(err => console.log('Erro coluna resumo:', err.message));
+
 app.post('/api/dados', async (req, res) => {
     const { comentario, cliente, timestamp, arquivos, resumo } = req.body;
 

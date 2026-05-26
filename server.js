@@ -28,13 +28,17 @@ pool.query(`
     )
 `).then(() => console.log('Tabela pronta'));
 
+pool.query(`ALTER TABLE envios ADD COLUMN IF NOT EXISTS disturbios JSONB`)
+.then(() => console.log('Coluna disturbios adicionada'))
+.catch(err => console.log('Erro coluna disturbios:', err.message));
+
 app.post('/api/dados', async (req, res) => {
     const { comentario, cliente, timestamp, arquivos, resumo, disturbios } = req.body;
 
     // salva no banco
     await pool.query(
-        `INSERT INTO envios (cliente, comentario, timestamp, alerta, recorte_acoes, recorte_historico, resumo)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        `INSERT INTO envios (cliente, comentario, timestamp, alerta, recorte_acoes, recorte_historico, resumo, disturbios)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [cliente, comentario, timestamp, arquivos.alerta, arquivos.recorte_acoes, arquivos.recorte_historico, JSON.stringify(resumo || {})]
     );
 
@@ -49,7 +53,7 @@ app.post('/api/dados', async (req, res) => {
         to: ['uieda@hpb.com.br'],
         subject: `${cliente} - Novo Relatório Troubleshooting`,
         html: `
-            <h2>Novo relatório Troubleshooting</h2>
+            <h2>Relatório Troubleshooting</h2>
             <p><strong>Cliente:</strong> ${cliente}</p>
             <p><strong>Data/Hora:</strong> ${new Date(timestamp).toLocaleString('pt-BR')}</p>
             <p><strong>Distúrbios ativos:</strong></p>
@@ -97,7 +101,7 @@ app.post('/api/dados', async (req, res) => {
 
 app.get('/api/envios', async (req, res) => {
     const result = await pool.query(
-        'SELECT id, cliente, comentario, resumo, timestamp, criado_em FROM envios ORDER BY criado_em DESC'
+        'SELECT id, cliente, comentario, resumo, disturbios, timestamp, criado_em FROM envios ORDER BY criado_em DESC'
     );
     res.json(result.rows);
 });

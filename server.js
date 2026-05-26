@@ -23,18 +23,24 @@ pool.query(`
         alerta TEXT,
         recorte_acoes TEXT,
         recorte_historico TEXT,
+        resumo JSONB,
         criado_em TIMESTAMPTZ DEFAULT NOW()
     )
 `).then(() => console.log('Tabela pronta'));
 
+pool.query(`ALTER TABLE envios ADD COLUMN IF NOT EXISTS resumo JSONB`)
+.then(() => console.log('Coluna resumo adicionada'))
+.catch(err => console.log('Erro ao adicionar coluna:', err.message));
+
+
 app.post('/api/dados', async (req, res) => {
-    const { comentario, cliente, timestamp, arquivos } = req.body;
+    const { comentario, cliente, timestamp, arquivos, resumo } = req.body;
 
     // salva no banco
     await pool.query(
-        `INSERT INTO envios (cliente, comentario, timestamp, alerta, recorte_acoes, recorte_historico)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [cliente, comentario, timestamp, arquivos.alerta, arquivos.recorte_acoes, arquivos.recorte_historico]
+        `INSERT INTO envios (cliente, comentario, timestamp, alerta, recorte_acoes, recorte_historico, resumo)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [cliente, comentario, timestamp, arquivos.alerta, arquivos.recorte_acoes, arquivos.recorte_historico, JSON.stringify(resumo || {})]
     );
 
     // converte base64 para buffer para anexar no e-mail
@@ -48,11 +54,26 @@ app.post('/api/dados', async (req, res) => {
         to: ['uieda@hpb.com.br'],
         subject: `${cliente} - Novo Relatório Troubleshooting`,
         html: `
-            <h2>Novo relatório Troubleshooting</h2>
+            <h2>Relatório Troubleshooting</h2>
             <p><strong>Cliente:</strong> ${cliente}</p>
             <p><strong>Data/Hora:</strong> ${new Date(timestamp).toLocaleString('pt-BR')}</p>
-            <p><strong>Comentário:</strong></p>
-            <p>${comentario}</p>
+
+            ${resumo ? `
+            <h3>Resumo do Checklist</h3>
+            <p><strong>Concluído às:</strong> ${resumo.horario || 'não informado'}</p>
+
+            ${resumo.algumProblema && resumo.problemas?.length > 0 ? `
+            <p><strong>Problemas identificados:</strong></p>
+            <ul>
+                ${resumo.problemas.map(p => `<li>${p.problema}</li>`).join('')}
+            </ul>
+            ` : '<p>Nenhum problema identificado pelas verificações disponíveis.</p>'}
+            ` : ''}
+
+            ${comentario && comentario !== 'sem comentario' ? `
+            <p><strong>Comentário do operador:</strong> ${comentario}</p>
+            ` : ''}
+
             <hr>
             <p>Arquivos em anexo.</p>
         `,

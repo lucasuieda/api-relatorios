@@ -35,7 +35,7 @@ app.post('/api/dados', async (req, res) => {
     await pool.query(
         `INSERT INTO envios (cliente, comentario, timestamp, alerta, recorte_acoes, recorte_historico, resumo, disturbios)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [cliente, comentario, timestamp, arquivos.alerta, arquivos.recorte_acoes, arquivos.recorte_historico, JSON.stringify(resumo || {})]
+        [cliente, comentario, timestamp, arquivos.alerta, arquivos.recorte_acoes, arquivos.recorte_historico, JSON.stringify(resumo || {}), JSON.stringify(disturbios || [])]
     );
 
     // converte base64 para buffer para anexar no e-mail

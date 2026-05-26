@@ -47,11 +47,11 @@ app.post('/api/dados', async (req, res) => {
     await resend.emails.send({
         from: 'onboarding@resend.dev',
         to: ['uieda@hpb.com.br'],
-        subject: `${cliente} - Novo Relatório Troubleshooting`,
+        subject: `${cliente} - Relatório Troubleshooting`,
         html: `
             <h2>Relatório Troubleshooting</h2>
             <p><strong>Cliente:</strong> ${cliente}</p>
-            <p><strong>Data/Hora:</strong> ${new Date(timestamp).toLocaleString('pt-BR')}</p>
+            <p><strong>Data/Hora:</strong> ${new Date(timestamp).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>
             <p><strong>Distúrbios ativos:</strong></p>
             <ul>
                 ${disturbios.map(d => `<li>${d}</li>`).join('')}

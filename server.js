@@ -27,10 +27,6 @@ pool.query(`
     )
 `).then(() => console.log('Tabela pronta'));
 
-pool.query(`ALTER TABLE envios RENAME COLUMN operador TO cliente`)
-  .then(() => console.log('Coluna renomeada'))
-  .catch(() => console.log('Coluna já renomeada'))
-
 app.post('/api/dados', async (req, res) => {
     const { comentario, cliente, timestamp, arquivos } = req.body;
 

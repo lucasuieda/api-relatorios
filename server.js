@@ -17,7 +17,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 pool.query(`
     CREATE TABLE IF NOT EXISTS envios (
         id SERIAL PRIMARY KEY,
-        operador VARCHAR(100),
+        cliente VARCHAR(100),
         comentario TEXT,
         timestamp TIMESTAMPTZ,
         alerta TEXT,
@@ -46,7 +46,7 @@ app.post('/api/dados', async (req, res) => {
     await resend.emails.send({
         from: 'uieda@hpb.com.br',
         to: ['uieda@hpb.com.br'],
-        subject: `${operador} - Novo Relatório Troubleshooting`,
+        subject: `${cliente} - Novo Relatório Troubleshooting`,
         html: `
             <h2>Novo relatório Troubleshooting</h2>
             <p><strong>Cliente:</strong> ${cliente}</p>
@@ -72,7 +72,7 @@ app.post('/api/dados', async (req, res) => {
         ]
     });
 
-    console.log('Recebido e e-mail enviado para:', operador);
+    console.log('Recebido e e-mail enviado para:', cliente);
     res.status(200).json({ status: 'recebido' });
 });
 
